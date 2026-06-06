@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Abdul Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#080808;--surface:#111;--border:#222;
+      --gold:#c8a96e;--gold-dim:#8a7249;
+      --text:#e8e0d4;--muted:#555;--danger:#c0392b;--radius:10px;
+    }
+    body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;font-weight:300;min-height:100vh}
+
+    header{
+      position:sticky;top:0;z-index:100;
+      background:rgba(8,8,8,0.93);backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+      padding:0 2.5rem;height:68px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .logo-title{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--gold)}
+    .logo-sub{font-size:0.7rem;text-transform:uppercase;letter-spacing:.18em;color:var(--muted);margin-left:.5rem}
+
+    .upload-btn{
+      display:flex;align-items:center;gap:.5rem;
+      background:var(--gold);color:#000;border:none;
+      padding:.55rem 1.2rem;border-radius:6px;
+      font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:500;
+      cursor:pointer;transition:background .2s,transform .15s;
+    }
+    .upload-btn:hover{background:#e0be88;transform:translateY(-1px)}
+    .upload-btn svg{width:16px;height:16px}
+
+    .hero{text-align:center;padding:4rem 1rem 2rem}
+    .hero h1{font-family:'Playfair Display',serif;font-size:clamp(2rem,6vw,4rem);font-weight:400}
+    .hero h1 span{color:var(--gold)}
+    .hero p{color:var(--muted);font-size:.9rem;margin-top:.4rem;letter-spacing:.05em}
+
+    .stats-bar{display:flex;justify-content:center;gap:2rem;padding:.6rem 1rem 1.5rem;font-size:.8rem;color:var(--muted)}
+    .stats-bar strong{color:var(--gold);font-weight:500}
+
+    .gallery-wrap{max-width:1400px;margin:0 auto;padding:0 1.5rem 5rem}
+    .gallery-grid{columns:5 220px;column-gap:12px}
+
+    .media-card{
+      break-inside:avoid;margin-bottom:12px;
+      border-radius:var(--radius);overflow:hidden;
+      position:relative;background:var(--surface);
+      border:1px solid var(--border);cursor:pointer;
+      animation:fadeIn .4s ease both;
+    }
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .media-card img,.media-card video{width:100%;display:block;object-fit:cover;transition:transform .4s}
+    .media-card:hover img,.media-card:hover video{transform:scale(1.03)}
+
+    .card-overlay{
+      position:absolute;inset:0;
+      background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 50%);
+      opacity:0;transition:opacity .3s;
+      display:flex;align-items:flex-end;justify-content:space-between;padding:10px;
+    }
+    .media-card:hover .card-overlay{opacity:1}
+    .card-label{font-size:.72rem;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78%}
+
+    .delete-btn{
+      background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.15);
+      color:#fff;border-radius:6px;width:30px;height:30px;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;transition:background .2s;flex-shrink:0;
+    }
+    .delete-btn:hover{background:var(--danger);border-color:var(--danger)}
+    .delete-btn svg{width:14px;height:14px;pointer-events:none}
+    .video-badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:2px 6px;font-size:.65rem;color:#fff;text-transform:uppercase;letter-spacing:.1em}
+
+    .empty-state{text-align:center;padding:5rem 1rem;color:var(--muted)}
+    .empty-state svg{opacity:.3;margin-bottom:1rem}
+    .empty-state h3{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--text);margin-bottom:.4rem;opacity:.6}
+
+    .loading-wrap{text-align:center;padding:4rem;color:var(--muted)}
+    .spinner{display:inline-block;width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:1rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center}
+    .modal-backdrop.open{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:2rem;width:min(420px,92vw);animation:slideUp .25s ease both}
+    @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .modal-title{font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:.3rem}
+    .modal-sub{font-size:.82rem;color:var(--muted);margin-bottom:1.5rem}
+
+    .drop-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:2.5rem 1rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:1rem}
+    .drop-zone:hover,.drop-zone.drag-over{border-color:var(--gold);background:rgba(200,169,110,.05)}
+    .drop-zone svg{opacity:.5;margin-bottom:.7rem}
+    .drop-zone p{font-size:.85rem;color:var(--muted)}
+    .drop-zone p strong{color:var(--gold)}
+    #file-input{display:none}
+
+    .progress-wrap{margin-bottom:1rem}
+    .progress-label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:.4rem}
+    .progress-bar-bg{background:var(--border);border-radius:4px;height:4px;overflow:hidden}
+    .progress-bar-fill{height:100%;background:var(--gold);border-radius:4px;transition:width .2s;width:0%}
+
+    .file-queue{list-style:none;margin-bottom:1rem;display:flex;flex-direction:column;gap:.4rem}
+    .file-queue li{display:flex;align-items:center;gap:.5rem;font-size:.8rem;background:var(--bg);border-radius:6px;padding:.4rem .7rem;border:1px solid var(--border)}
+    .file-queue li .q-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .file-queue li .q-size{color:var(--muted)}
+    .q-done{color:#4caf50}
+
+    .btn-row{display:flex;gap:.7rem;justify-content:flex-end;margin-top:.5rem}
+    .btn{padding:.5rem 1.1rem;border-radius:6px;border:none;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;transition:all .18s}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+    .btn-ghost:hover{border-color:var(--muted)}
+    .btn-primary{background:var(--gold);color:#000}
+    .btn-primary:hover{background:#e0be88}
+    .btn-primary:disabled{opacity:.45;cursor:not-allowed}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-danger:hover{background:#e74c3c}
+
+    .pass-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:.65rem .9rem;border-radius:6px;font-family:'Outfit',sans-serif;font-size:.9rem;margin-bottom:.5rem;outline:none;transition:border-color .2s}
+    .pass-input:focus{border-color:var(--gold)}
+    .pass-error{color:var(--danger);font-size:.78rem;margin-bottom:.8rem;display:none}
+    .pass-error.show{display:block}
+
+    .lightbox-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:800;align-items:center;justify-content:center}
+    .lightbox-backdrop.open{display:flex}
+    #lightbox-inner img,#lightbox-inner video{max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain}
+    .lightbox-close{position:fixed;top:1.2rem;right:1.4rem;background:rgba(255,255,255,.1);border:none;color:#fff;font-size:1.4rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+    .lightbox-close:hover{background:rgba(255,255,255,.2)}
+
+    .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.65rem 1.3rem;border-radius:8px;font-size:.85rem;transition:transform .3s ease;z-index:999;pointer-events:none;white-space:nowrap}
+    .toast.show{transform:translateX(-50%) translateY(0)}
+    .toast.success{border-color:#4caf50}
+    .toast.error{border-color:var(--danger)}
+
+    @media(max-width:600px){
+      header{padding:0 1rem}
+      .gallery-grid{columns:2 140px}
+      .hero h1{font-size:2rem}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <span class="logo-title">Abdul Gallery</span>
+    <span class="logo-sub">· Collection</span>
+  </div>
+  <button class="upload-btn" onclick="openUploadModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+      <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+    </svg>
+    Upload
+  </button>
+</header>
+
+<div class="hero">
+  <h1>A <span>Visual</span> Collection</h1>
+  <p>Photos &amp; Videos · Shared Gallery</p>
+</div>
+<div class="stats-bar">
+  <span>📷 <strong id="photo-count">0</strong> Photos</span>
+  <span>🎬 <strong id="video-count">0</strong> Videos</span>
+</div>
+
+<div class="gallery-wrap">
+  <div id="loading-wrap" class="loading-wrap">
+    <div class="spinner"></div>
+    <div>Loading gallery…</div>
+  </div>
+  <div id="gallery" class="gallery-grid" style="display:none"></div>
+  <div id="empty-state" class="empty-state" style="display:none">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21 15 16 10 5 21"/>
+    </svg>
+    <h3>Gallery is empty</h3>
+    <p>Upload photos or videos to get started</p>
+  </div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="modal-backdrop" id="upload-modal">
+  <div class="modal">
+    <div class="modal-title">Upload Media</div>
+    <div class="modal-sub">Photos and videos will be visible to everyone</div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+        <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+      </svg>
+      <p><strong>Click to browse</strong> or drag &amp; drop</p>
+      <p style="margin-top:.3rem;font-size:.76rem">JPG, PNG, GIF, WEBP, MP4, MOV</p>
+    </div>
+    <input type="file" id="file-input" multiple accept="image/*,video/*" onchange="handleFileSelect(this.files)"/>
+    <ul class="file-queue" id="file-queue"></ul>
+    <div class="progress-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-label">
+        <span id="progress-name">Uploading…</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeUploadModal()">Cancel</button>
+      <button class="btn btn-primary" id="start-upload-btn" onclick="startUpload()" disabled>Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal">
+    <div class="modal-title">🔒 Delete Media</div>
+    <div class="modal-sub">Enter the admin password to delete this item</div>
+    <input class="pass-input" type="password" id="delete-pass" placeholder="Enter password…" onkeydown="if(event.key==='Enter')confirmDelete()"/>
+    <div class="pass-error" id="pass-error">Incorrect password. Please try again.</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox-backdrop" id="lightbox" onclick="closeLightboxBg(event)">
+  <div id="lightbox-inner"></div>
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ══════════════════════════════════════════════
+  //  ImageKit Config
+  // ══════════════════════════════════════════════
+  const IK_PRIVATE_KEY  = "private_+I4NNIcBMCK7jtpYnrlfBcmXfMk=";
+  const IK_URL_ENDPOINT = "https://ik.imagekit.io/abdulgallery";
+  const DELETE_PASSWORD = "123123";
+  const AUTH            = "Basic " + btoa(IK_PRIVATE_KEY + ":");
+
+  // ─── STATE ────────────────────────────────────
+  let pendingFiles     = [];
+  let pendingDeleteId  = null;
+
+  // ─── INIT ─────────────────────────────────────
+  async function init() { await loadGallery(); }
+
+  // ─── LOAD GALLERY ─────────────────────────────
+  async function loadGallery() {
+    try {
+      const res = await fetch(
+        "https://api.imagekit.io/v1/files?limit=100&sort=DESC_CREATED&includeFolder=false",
+        { headers: { Authorization: AUTH } }
+      );
+      if (!res.ok) throw new Error("API error " + res.status);
+      const files = await res.json();
+      renderGallery(files);
+    } catch (e) {
+      document.getElementById("loading-wrap").innerHTML =
+        `<div style="color:var(--danger);font-size:.9rem">❌ ${e.message}</div>`;
+    }
+  }
+
+  function renderGallery(files) {
+    const gallery    = document.getElementById("gallery");
+    const loading    = document.getElementById("loading-wrap");
+    const emptyState = document.getElementById("empty-state");
+
+    const photos = files.filter(f => f.fileType === "image").length;
+    const videos = files.filter(f => f.fileType !== "image").length;
+    document.getElementById("photo-count").textContent = photos;
+    document.getElementById("video-count").textContent = videos;
+
+    loading.style.display = "none";
+
+    if (!files.length) {
+      emptyState.style.display = "block";
+      return;
+    }
+
+    gallery.style.display = "";
+    gallery.innerHTML = "";
+
+    files.forEach((file, i) => {
+      const isVideo = file.fileType !== "image";
+      const url     = file.url;
+      const card    = document.createElement("div");
+      card.className = "media-card";
+      card.style.animationDelay = `${i * 0.04}s`;
+
+      card.innerHTML = `
+        ${isVideo
+          ? `<video src="${url}" muted loop preload="metadata"></video><div class="video-badge">▶ video</div>`
+          : `<img src="${url}?tr=w-600" alt="${file.name}" loading="lazy"/>`}
+        <div class="card-overlay">
+          <span class="card-label">${file.name}</span>
+          <button class="delete-btn" data-id="${file.fileId}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+            </svg>
+          </button>
+        </div>`;
+
+      card.querySelector(".delete-btn").addEventListener("click", e => {
+        e.stopPropagation();
+        openDeleteModal(file.fileId);
+      });
+
+      card.addEventListener("click", () => openLightbox(file));
+
+      if (isVideo) {
+        const vid = card.querySelector("video");
+        card.addEventListener("mouseenter", () => vid.play().catch(() => {}));
+        card.addEventListener("mouseleave", () => { vid.pause(); vid.currentTime = 0; });
+      }
+
+      gallery.appendChild(card);
+    });
+  }
+
+  // ─── UPLOAD ───────────────────────────────────
+  function openUploadModal() {
+    pendingFiles = [];
+    document.getElementById("file-queue").innerHTML = "";
+    document.getElementById("file-input").value = "";
+    document.getElementById("progress-wrap").style.display = "none";
+    document.getElementById("start-upload-btn").disabled = true;
+    document.getElementById("upload-modal").classList.add("open");
+  }
+  function closeUploadModal() {
+    document.getElementById("upload-modal").classList.remove("open");
+    pendingFiles = [];
+  }
+
+  function handleFileSelect(files) {
+    pendingFiles = Array.from(files);
+    const ul = document.getElementById("file-queue");
+    ul.innerHTML = "";
+    pendingFiles.forEach(f => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="q-name">${f.name}</span><span class="q-size">${(f.size/1024/1024).toFixed(1)} MB</span>`;
+      ul.appendChild(li);
+    });
+    document.getElementById("start-upload-btn").disabled = pendingFiles.length === 0;
+  }
+
+  const dropZone = document.getElementById("drop-zone");
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+  dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("drag-over"); handleFileSelect(e.dataTransfer.files); });
+
+  async function startUpload() {
+    if (!pendingFiles.length) return;
+    const btn   = document.getElementById("start-upload-btn");
+    const items = document.querySelectorAll("#file-queue li");
+    btn.disabled = true;
+    document.getElementById("progress-wrap").style.display = "block";
+
+    for (let i = 0; i < pendingFiles.length; i++) {
+      const file = pendingFiles[i];
+      document.getElementById("progress-name").textContent = `(${i+1}/${pendingFiles.length}) ${file.name}`;
+      document.getElementById("progress-fill").style.width = "0%";
+      document.getElementById("progress-pct").textContent  = "0%";
+
+      // Fake progress animation
+      let p = 0;
+      const timer = setInterval(() => {
+        p = Math.min(p + Math.random() * 12, 85);
+        document.getElementById("progress-fill").style.width = p + "%";
+        document.getElementById("progress-pct").textContent  = Math.round(p) + "%";
+      }, 250);
+
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("fileName", file.name);
+        form.append("useUniqueFileName", "true");
+
+        const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
+          method: "POST",
+          headers: { Authorization: AUTH },
+          body: form,
+        });
+
+        clearInterval(timer);
+        if (!res.ok) { const e = await res.json(); throw new Error(e.message || res.status); }
+
+        document.getElementById("progress-fill").style.width = "100%";
+        document.getElementById("progress-pct").textContent  = "100%";
+        if (items[i]) items[i].innerHTML += `<span class="q-done"> ✓</span>`;
+      } catch (e) {
+        clearInterval(timer);
+        showToast("Upload failed: " + e.message, "error");
+        btn.disabled = false;
+        return;
+      }
+    }
+
+    showToast("Uploaded successfully!", "success");
+    closeUploadModal();
+    await loadGallery();
+    btn.disabled = false;
+  }
+
+  // ─── DELETE ───────────────────────────────────
+  function openDeleteModal(fileId) {
+    pendingDeleteId = fileId;
+    document.getElementById("delete-pass").value = "";
+    document.getElementById("pass-error").classList.remove("show");
+    document.getElementById("delete-modal").classList.add("open");
+    setTimeout(() => document.getElementById("delete-pass").focus(), 100);
+  }
+  function closeDeleteModal() {
+    document.getElementById("delete-modal").classList.remove("open");
+    pendingDeleteId = null;
+  }
+
+  async function confirmDelete() {
+    const pass = document.getElementById("delete-pass").value;
+    if (pass !== DELETE_PASSWORD) {
+      document.getElementById("pass-error").classList.add("show");
+      document.getElementById("delete-pass").value = "";
+      document.getElementById("delete-pass").focus();
+      return;
+    }
+    try {
+      const res = await fetch(`https://api.imagekit.io/v1/files/${pendingDeleteId}`, {
+        method: "DELETE",
+        headers: { Authorization: AUTH },
+      });
+      if (!res.ok) throw new Error("Delete failed: " + res.status);
+      closeDeleteModal();
+      showToast("Deleted successfully", "success");
+      await loadGallery();
+    } catch (e) {
+      showToast(e.message, "error");
+    }
+  }
+
+  // ─── LIGHTBOX ─────────────────────────────────
+  function openLightbox(file) {
+    const isVideo = file.fileType !== "image";
+    const inner   = document.getElementById("lightbox-inner");
+    inner.innerHTML = isVideo
+      ? `<video src="${file.url}" controls autoplay style="max-width:90vw;max-height:90vh;border-radius:8px"></video>`
+      : `<img src="${file.url}" alt="${file.name}" style="max-width:90vw;max-height:90vh;border-radius:8px"/>`;
+    document.getElementById("lightbox").classList.add("open");
+  }
+  function closeLightbox() {
+    document.getElementById("lightbox").classList.remove("open");
+    document.getElementById("lightbox-inner").innerHTML = "";
+  }
+  function closeLightboxBg(e) { if (e.target === document.getElementById("lightbox")) closeLightbox(); }
+
+  // ─── TOAST ────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type = "") {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.className = "toast " + type;
+    clearTimeout(toastTimer);
+    requestAnimationFrame(() => t.classList.add("show"));
+    toastTimer = setTimeout(() => t.classList.remove("show"), 3500);
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") { closeLightbox(); closeUploadModal(); closeDeleteModal(); }
+  });
+
+  init();
+</script>
+</body>
+</html>
